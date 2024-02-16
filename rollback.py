@@ -25,54 +25,41 @@ def migrate_database():
 
         else:
             print('no')
+)
 
-        # if table_exists(cur, "interests"):
-        #     # Change name and type of INTEREST column
-        #     cur.execute("ALTER TABLE INTERESTS RENAME COLUMN INTEREST TO INTERESTS")
-        #     cur.execute("ALTER TABLE INTERESTS ALTER COLUMN INTERESTS TYPE TEXT[] USING array[INTERESTS]")
-        #
-        #     # Aggregate interests for each STUDENT_ID
-        #     cur.execute("""
-        #         SELECT
-        #             STUDENT_ID,
-        #             ARRAY_AGG(DISTINCT INTERESTS) AS INTERESTS
-        #         FROM
-        #             INTERESTS
-        #         GROUP BY
-        #             STUDENT_ID
-        #         ORDER BY
-        #             STUDENT_ID;
-        #     """)
-        #
-        #
-        #
-        #     results = cur.fetchall()
-        #
-        #
-        #
-        #     print(results)
-        #
-        #     # Update INTERESTS table with aggregated interests
-        #     for student_id, interests in results:
-        #         # Flatten the nested arrays and convert to a string representation
-        #         flattened_interests = '{{' + ','.join([interest[0] for interest in interests]) + '}}'
-        #         cur.execute("UPDATE INTERESTS SET INTERESTS = %s WHERE STUDENT_ID = %s",
-        #                     (flattened_interests, student_id))
-        #
-        #     cur.execute("""
-        #         DELETE FROM INTERESTS
-        #         WHERE ctid NOT IN (
-        #             SELECT MIN(ctid)
-        #             FROM INTERESTS
-        #             GROUP BY STUDENT_ID, INTERESTS
-        #         )
-        #     """)
-        # else:
-        #     print('no')
+
+        if table_exists(cur, "interests"):
+            cur.execute("ALTER TABLE INTERESTS RENAME COLUMN INTERESTS TO INTEREST")
+            cur.execute("ALTER TABLE INTERESTS ALTER COLUMN INTEREST TYPE VARCHAR(50)")
+
+            cur.execute("""
+                        CREATE TABLE INTERESTS_FLATTENED (
+                            STUDENT_ID INTEGER,
+                            INTEREST VARCHAR(100)
+                        )
+                    """)
+
+            cur.execute("SELECT STUDENT_ID, INTERESTS FROM INTERESTS")
+            results = cur.fetchall()
+
+            for student_id, interests_arr in results:
+                interests = interests_arr[2:-2].split(",")
+                for interest in interests:
+                    interest = interest.strip('{}"')
+                    if interest:
+                        cur.execute("INSERT INTO INTERESTS_FLATTENED (STUDENT_ID, INTEREST) VALUES (%s, %s)",
+                                    (student_id, interest))
+
+            cur.execute("DROP TABLE INTERESTS")
+
+            cur.execute("ALTER TABLE INTERESTS_FLATTENED RENAME TO INTERESTS")
+
+
+        else:
+            print('no')
 
 
 
-        # Commit the changes
         conn.commit()
         print("RollBack completed successfully.")
 
@@ -81,7 +68,6 @@ def migrate_database():
         print("Error during rollback:", e)
 
     finally:
-        # Close the database connection
         cur.close()
         conn.close()
 
@@ -93,8 +79,9 @@ def table_exists(cursor, table_name):
     )
     return cursor.fetchone()[0]
 
-# Call the migrate_database function to execute the migration
 if __name__ == "__main__":
     migrate_database()
+
+
 
 
