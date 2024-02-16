@@ -15,26 +15,16 @@ def migrate_database():
 
     try:
         # Rename ST_ID to STUDENT_ID
-        # if table_exists(cur, "students"):
-        #     # Rename ST_ID to STUDENT_ID
-        #     cur.execute("ALTER TABLE STUDENTS RENAME COLUMN ST_ID TO STUDENT_ID")
-        #
-        #     # Change length of ST_NAME and ST_LAST columns
-        #     cur.execute("ALTER TABLE STUDENTS ALTER COLUMN ST_NAME TYPE VARCHAR(30)")
-        #     cur.execute("ALTER TABLE STUDENTS ALTER COLUMN ST_LAST TYPE VARCHAR(30)")
-        #
-        # else:
-        #     print('no')
+        if table_exists(cur, "students"):
+            # Rename ST_ID to STUDENT_ID
+            cur.execute("ALTER TABLE STUDENTS RENAME COLUMN ST_ID TO STUDENT_ID")
 
-        # if table_exists(cur, "interests"):
-        #     # Change name and type of INTEREST column
-        #     cur.execute("ALTER TABLE INTERESTS RENAME COLUMN INTEREST TO INTERESTS")
-        #     cur.execute("ALTER TABLE INTERESTS ALTER COLUMN INTERESTS TYPE TEXT[] USING array[INTERESTS]")
-        # else:
-        #     print('no')
-        #
-        # # Migrate data in INTERESTS table to array format
-        # cur.execute("UPDATE INTERESTS SET INTERESTS = ARRAY[INTERESTS]")
+            # Change length of ST_NAME and ST_LAST columns
+            cur.execute("ALTER TABLE STUDENTS ALTER COLUMN ST_NAME TYPE VARCHAR(30)")
+            cur.execute("ALTER TABLE STUDENTS ALTER COLUMN ST_LAST TYPE VARCHAR(30)")
+
+        else:
+            print('no')
 
         if table_exists(cur, "interests"):
             # Change name and type of INTEREST column
@@ -43,31 +33,43 @@ def migrate_database():
 
             # Aggregate interests for each STUDENT_ID
             cur.execute("""
-                SELECT STUDENT_ID, array_agg(interest) AS interests
-                FROM (
-                    SELECT DISTINCT STUDENT_ID, INTERESTS AS interest
-                    FROM INTERESTS
-                ) AS subquery
-                GROUP BY STUDENT_ID
+                SELECT
+                    STUDENT_ID,
+                    ARRAY_AGG(DISTINCT INTERESTS) AS INTERESTS
+                FROM
+                    INTERESTS
+                GROUP BY
+                    STUDENT_ID
+                ORDER BY
+                    STUDENT_ID;
             """)
+
+
+
             results = cur.fetchall()
+
+
+
+            print(results)
 
             # Update INTERESTS table with aggregated interests
             for student_id, interests in results:
-                cur.execute("UPDATE INTERESTS SET INTERESTS = %s WHERE STUDENT_ID = %s", (interests, student_id))
+                # Flatten the nested arrays and convert to a string representation
+                flattened_interests = '{{' + ','.join([interest[0] for interest in interests]) + '}}'
+                cur.execute("UPDATE INTERESTS SET INTERESTS = %s WHERE STUDENT_ID = %s",
+                            (flattened_interests, student_id))
+
+            cur.execute("""
+                DELETE FROM INTERESTS
+                WHERE ctid NOT IN (
+                    SELECT MIN(ctid)
+                    FROM INTERESTS
+                    GROUP BY STUDENT_ID, INTERESTS
+                )
+            """)
         else:
             print('no')
 
-        # Query to retrieve the contents of INTERESTS table
-        #     cur.execute("SELECT * FROM INTERESTS")
-        #     interests_data = cur.fetchall()
-        #
-        #     # Print the contents of INTERESTS table
-        #     print("Contents of INTERESTS table:")
-        #     for row in interests_data:
-        #         print(row)
-        # else:
-        #     print("INTERESTS table does not exist in the database.")
 
 
         # Commit the changes
