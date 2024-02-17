@@ -1,9 +1,8 @@
-# migration_script.py
+# rollback_script.py
 
 import pg8000
 
 def migrate_database():
-    # Connect to the PostgreSQL database
     conn = pg8000.connect(
         database="postgres",
         user="postgres",
@@ -24,9 +23,7 @@ def migrate_database():
             cur.execute("ALTER TABLE STUDENTS ALTER COLUMN ST_LAST TYPE VARCHAR(20)")
 
         else:
-            print('no')
-)
-
+            print('no such table!')
 
         if table_exists(cur, "interests"):
             cur.execute("ALTER TABLE INTERESTS RENAME COLUMN INTERESTS TO INTEREST")
@@ -56,7 +53,7 @@ def migrate_database():
 
 
         else:
-            print('no')
+            print('no such table!')
 
 
 
@@ -72,7 +69,6 @@ def migrate_database():
         conn.close()
 
 def table_exists(cursor, table_name):
-    """Check if the specified table exists in the database."""
     cursor.execute(
         "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = %s)",
         (table_name,)
@@ -81,7 +77,5 @@ def table_exists(cursor, table_name):
 
 if __name__ == "__main__":
     migrate_database()
-
-
 
 
