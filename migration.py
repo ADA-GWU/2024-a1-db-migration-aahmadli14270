@@ -1,4 +1,4 @@
-# migration_script.py
+#v2.py
 
 import pg8000
 
@@ -13,52 +13,42 @@ def migrate_database():
     cur = conn.cursor()
 
     try:
-        if table_exists(cur, "students"):
-            cur.execute("ALTER TABLE STUDENTS RENAME COLUMN ST_ID TO STUDENT_ID")
+        cur.execute("""
+            CREATE TABLE NEW_STUDENTS (
+                STUDENT_ID INT PRIMARY KEY,
+                ST_NAME VARCHAR(30),
+                ST_LAST VARCHAR(30)
+            )
+        """)
 
-            cur.execute("ALTER TABLE STUDENTS ALTER COLUMN ST_NAME TYPE VARCHAR(30)")
-            cur.execute("ALTER TABLE STUDENTS ALTER COLUMN ST_LAST TYPE VARCHAR(30)")
+        cur.execute("""
+            INSERT INTO NEW_STUDENTS (STUDENT_ID, ST_NAME, ST_LAST)
+            SELECT ST_ID, ST_NAME, ST_LAST FROM STUDENTS
+        """)
 
-        else:
-            print('no')
+        cur.execute("DROP TABLE STUDENTS")
+
+        cur.execute("ALTER TABLE NEW_STUDENTS RENAME TO STUDENTS")
+
+
+        #############
 
         if table_exists(cur, "interests"):
-            cur.execute("ALTER TABLE INTERESTS RENAME COLUMN INTEREST TO INTERESTS")
-            cur.execute("ALTER TABLE INTERESTS ALTER COLUMN INTERESTS TYPE TEXT[] USING array[INTERESTS]")
+            cur.execute("""
+                        CREATE TABLE NEW_INTERESTS (
+                            STUDENT_ID INT,
+                            INTERESTS TEXT[]
+                        )
+                    """)
 
             cur.execute("""
-                SELECT
-                    STUDENT_ID,
-                    ARRAY_AGG(DISTINCT INTERESTS) AS INTERESTS
-                FROM
-                    INTERESTS
-                GROUP BY
-                    STUDENT_ID
-                ORDER BY
-                    STUDENT_ID;
-            """)
+                        INSERT INTO NEW_INTERESTS (STUDENT_ID, INTERESTS)
+                        SELECT STUDENT_ID, ARRAY_AGG(DISTINCT INTEREST) FROM INTERESTS GROUP BY STUDENT_ID
+                    """)
 
+            cur.execute("DROP TABLE INTERESTS")
 
-
-            results = cur.fetchall()
-
-
-
-            print(results)
-
-            for student_id, interests in results:
-                flattened_interests = '{{' + ','.join([interest[0] for interest in interests]) + '}}'
-                cur.execute("UPDATE INTERESTS SET INTERESTS = %s WHERE STUDENT_ID = %s",
-                            (flattened_interests, student_id))
-
-            cur.execute("""
-                DELETE FROM INTERESTS
-                WHERE ctid NOT IN (
-                    SELECT MIN(ctid)
-                    FROM INTERESTS
-                    GROUP BY STUDENT_ID, INTERESTS
-                )
-            """)
+            cur.execute("ALTER TABLE NEW_INTERESTS RENAME TO INTERESTS")
         else:
             print('no')
 
