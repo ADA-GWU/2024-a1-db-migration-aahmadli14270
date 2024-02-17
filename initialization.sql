@@ -28,13 +28,18 @@ INSERT INTO INTERESTS (STUDENT_ID, INTEREST) VALUES
 (1, 'Chemistry'),
 (3, 'Chess');
 
-SELECT column_name, data_type
+
+SELECT column_name, data_type, character_maximum_length
 FROM information_schema.columns
 WHERE table_name = 'students';
 
--- SELECT * FROM students;
-SELECT DISTINCT * FROM interests;
+SELECT * FROM students;
 
--- --
--- DROP table students;
--- drop table interests;
+
+
+
+SELECT *  FROM interests;
+
+
+DROP table students;
+drop table interests;
