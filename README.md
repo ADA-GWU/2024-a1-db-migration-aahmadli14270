@@ -16,7 +16,7 @@ _How to run?_
 * open directory through IDE or any other tool. (Pycharm recommended for compiling python scripts and database extension flexibility)
 * Run initialization.sql file in order to create tables and inserting data. (Make sure is postgreSQL server is running on your local machine; port 5433)
 * Then you should run migration.py file to migrate databases to updated versions of them. (If you are using terminal, on project directory, command "python migration.py" will be enough to run script successfully)
-* In order to rollback to previous version of database then run rollback.py file.
+* In order to rollback to previous version of database then run rollback.py file. ("python rollback.py" command for terminal)
 <br />
 
 _Additional Notes:_
