@@ -22,3 +22,4 @@ _How to run?_
 _Additional Notes:_
 * During the migration process, the tables might be populated with new data. The migration script handles this scenario by migrating the existing data to the new schema.
 * Error Handling: If any errors occur during the migration or rollback process, the scripts will handle them gracefully and roll back the changes to maintain data integrity with the power of pg8000 library.
+* You can always adjust hostname, username, password, port number, and other parameters from each pyhton script for the necessities of your company. 
