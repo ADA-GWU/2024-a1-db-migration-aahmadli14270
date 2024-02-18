@@ -41,5 +41,5 @@ SELECT * FROM students;
 SELECT *  FROM interests;
 
 
-DROP table students;
-drop table interests;
+-- DROP table students;
+-- drop table interests;
